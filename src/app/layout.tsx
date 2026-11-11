@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { BufferSidebar } from '@/components/BufferSidebar';
+import { GoogleAuthHeader } from '@/components/GoogleAuthHeader';
+import { getCurrentUser } from '@/lib/auth';
 
 export const metadata: Metadata = {
-  title: 'InstaMulti - Multi-Account Instagram Reels Broadcaster',
-  description: 'Connect multiple Instagram accounts and broadcast Reels to all of them in 1 click.',
+  title: 'InstaMulti - Multi-Account Instagram Instant Broadcaster',
+  description: 'Multi-account Instagram publishing platform with Google Sign-In and 1-click broadcast.',
 };
 
 export default function RootLayout({
@@ -12,16 +13,15 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <html lang="en">
-      <body className="bg-[#f8fafc] text-slate-900 min-h-screen flex antialiased">
-        <BufferSidebar />
+  const currentUser = getCurrentUser();
 
-        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-          <main className="flex-1 p-6 max-w-6xl w-full mx-auto">
-            {children}
-          </main>
-        </div>
+  return (
+    <html lang="en" className="dark">
+      <body className="bg-[#090d16] text-[#dae2fd] min-h-screen flex flex-col antialiased selection:bg-rose-500 selection:text-white">
+        <GoogleAuthHeader currentUser={currentUser} />
+        <main className="flex-1 flex flex-col w-full">
+          {children}
+        </main>
       </body>
     </html>
   );

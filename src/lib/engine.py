@@ -24,11 +24,10 @@ def get_instagram_client(account: Dict[str, Any]) -> Client:
     session_file = creds.get("sessionFile")
     session_data = creds.get("sessionData")
 
-    # Path to custom saved session
     custom_session_path = os.path.join(SESSIONS_DIR, f"{username}_session.json") if username else None
     default_session_path = r"D:\ai video editing with image\insta_session.json"
 
-    # Try 1: Load from direct sessionData string
+    # Try 1: Direct sessionData
     if session_data:
         try:
             cl.set_settings(session_data if isinstance(session_data, dict) else json.loads(session_data))
@@ -36,7 +35,7 @@ def get_instagram_client(account: Dict[str, Any]) -> Client:
         except Exception as e:
             print(f"[{username}] Session data error: {e}", file=sys.stderr)
 
-    # Try 2: Load from account sessionFile
+    # Try 2: Account sessionFile
     if session_file and os.path.exists(session_file):
         try:
             cl.load_settings(session_file)
@@ -44,15 +43,15 @@ def get_instagram_client(account: Dict[str, Any]) -> Client:
         except Exception as e:
             print(f"[{username}] Session file error: {e}", file=sys.stderr)
 
-    # Try 3: Load from data/sessions/{username}_session.json
+    # Try 3: data/sessions/{username}_session.json
     if custom_session_path and os.path.exists(custom_session_path):
         try:
             cl.load_settings(custom_session_path)
             return cl
         except Exception as e:
-            print(f"[{username}] Custom session load error: {e}", file=sys.stderr)
+            print(f"[{username}] Custom session error: {e}", file=sys.stderr)
 
-    # Try 4: Fallback to default session in D:\ai video editing with image
+    # Try 4: Fallback to default session
     if os.path.exists(default_session_path):
         try:
             cl.load_settings(default_session_path)
@@ -60,9 +59,9 @@ def get_instagram_client(account: Dict[str, Any]) -> Client:
         except Exception as e:
             print(f"[{username}] Default session error: {e}", file=sys.stderr)
 
-    # Try 5: Username & Password Login
+    # Try 5: Credentials login
     if username and password:
-        print(f"[{username}] Logging in with credentials...", file=sys.stderr)
+        print(f"[{username}] Logging in with username/password...", file=sys.stderr)
         cl.login(username, password)
         if custom_session_path:
             cl.dump_settings(custom_session_path)
@@ -71,10 +70,34 @@ def get_instagram_client(account: Dict[str, Any]) -> Client:
     raise Exception(f"No valid session or credentials found for @{username}")
 
 
+def verify_account(account: Dict[str, Any]) -> Dict[str, Any]:
+    username = account.get("username", "").strip().replace("@", "")
+    if account.get("isSimulated", False):
+        return {
+            "status": "valid",
+            "username": username,
+            "fullName": account.get("name", username),
+            "followers": 1250,
+            "simulated": True
+        }
+
+    try:
+        cl = get_instagram_client(account)
+        info = cl.account_info()
+        return {
+            "status": "valid",
+            "username": info.username,
+            "fullName": info.full_name,
+            "followers": info.follower_count,
+            "avatarUrl": str(info.profile_pic_url) if info.profile_pic_url else None
+        }
+    except Exception as e:
+        return {"status": "expired", "error": str(e), "username": username}
+
+
 def publish_to_instagram(account: Dict[str, Any], file_path: str, caption: str) -> Dict[str, Any]:
     username = account.get("username", account.get("name", "instagram"))
     
-    # If simulated
     if account.get("isSimulated", False):
         import time
         time.sleep(1.2)
@@ -130,28 +153,6 @@ def publish_to_instagram(account: Dict[str, Any], file_path: str, caption: str) 
         }
 
 
-def test_login(account: Dict[str, Any]) -> Dict[str, Any]:
-    username = account.get("username", "").strip().replace("@", "")
-    password = account.get("password", "")
-    
-    cl = Client()
-    try:
-        cl.login(username, password)
-        session_path = os.path.join(SESSIONS_DIR, f"{username}_session.json")
-        cl.dump_settings(session_path)
-        
-        info = cl.account_info()
-        return {
-            "status": "success",
-            "username": info.username,
-            "fullName": info.full_name,
-            "avatarUrl": str(info.profile_pic_url),
-            "sessionFile": session_path
-        }
-    except Exception as e:
-        return {"status": "failed", "error": str(e)}
-
-
 def main():
     if len(sys.argv) < 2:
         print(json.dumps({"error": "No arguments provided"}))
@@ -166,8 +167,8 @@ def main():
 
     action = payload.get("action", "publish")
 
-    if action == "test_login":
-        res = test_login(payload.get("account", {}))
+    if action == "verify":
+        res = verify_account(payload.get("account", {}))
         print(json.dumps(res))
         return
 

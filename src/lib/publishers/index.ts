@@ -8,6 +8,7 @@ import { getAccounts, savePostBroadcast } from '../db';
 const execFileAsync = promisify(execFile);
 
 interface DispatchOptions {
+  userId?: string;
   caption: string;
   mediaUrl: string;
   mediaType?: 'video' | 'image';
@@ -15,12 +16,13 @@ interface DispatchOptions {
 }
 
 export async function dispatchInstagramBroadcast({
+  userId,
   caption,
   mediaUrl,
   mediaType = 'video',
   targetAccountIds,
 }: DispatchOptions): Promise<InstagramBroadcast> {
-  const allAccounts = getAccounts();
+  const allAccounts = getAccounts(userId);
   const selectedAccounts = allAccounts.filter((acc) =>
     targetAccountIds.includes(acc.id)
   );
@@ -28,6 +30,7 @@ export async function dispatchInstagramBroadcast({
   const broadcastId = 'post_' + Date.now();
   const newPost: InstagramBroadcast = {
     id: broadcastId,
+    userId,
     caption,
     mediaUrl,
     mediaType,
@@ -37,7 +40,7 @@ export async function dispatchInstagramBroadcast({
     results: [],
   };
 
-  savePostBroadcast(newPost);
+  savePostBroadcast(newPost, userId);
 
   // Determine local file path
   let localFilePath = '';

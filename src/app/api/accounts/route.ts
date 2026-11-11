@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccounts, addAccount, removeAccount } from '@/lib/db';
 import { InstagramAccount } from '@/lib/types';
+import { getSessionUserIdFromRequest } from '@/lib/auth';
 
-export async function GET() {
-  const accounts = getAccounts();
-  return NextResponse.json({ accounts });
+export async function GET(req: NextRequest) {
+  const userId = getSessionUserIdFromRequest(req);
+  const accounts = getAccounts(userId);
+  return NextResponse.json({ accounts, userId });
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = getSessionUserIdFromRequest(req);
     const body = await req.json();
-    const { name, username, credentials, isSimulated } = body;
+    const { name, username, credentials, isSimulated, followers } = body;
 
     const cleanUsername = (username || name || '').trim().replace(/^@/, '');
 
@@ -23,8 +26,10 @@ export async function POST(req: NextRequest) {
 
     const newAccount: InstagramAccount = {
       id: 'acc-ig-' + Date.now(),
+      userId,
       name: name || cleanUsername,
       username: cleanUsername,
+      followers: followers || '0',
       avatarUrl:
         body.avatarUrl ||
         `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop`,
@@ -34,7 +39,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    addAccount(newAccount);
+    addAccount(newAccount, userId);
     return NextResponse.json({ success: true, account: newAccount });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Failed to add account' }, { status: 500 });
@@ -42,6 +47,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const userId = getSessionUserIdFromRequest(req);
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 
@@ -49,9 +55,9 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Missing account id' }, { status: 400 });
   }
 
-  const removed = removeAccount(id);
+  const removed = removeAccount(id, userId);
   if (!removed) {
-    return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Account not found or access denied' }, { status: 404 });
   }
 
   return NextResponse.json({ success: true, id });

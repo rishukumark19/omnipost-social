@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #090d16;
+  --foreground: #dae2fd;
 }
 
 body {
@@ -17,16 +17,28 @@ body {
 
 /* Custom scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #090d16;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #1e293b;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #334155;
+}
+
+.ig-sunset-gradient {
+  background: linear-gradient(135deg, #f58529 0%, #dd2a7b 50%, #8134af 100%);
+}
+
+.ig-primary-cta {
+  background: linear-gradient(90deg, #ff4c83 0%, #df7415 100%);
+}
+
+.phone-shadow {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.12);
 }

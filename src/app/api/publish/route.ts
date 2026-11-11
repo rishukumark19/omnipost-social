@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dispatchInstagramBroadcast } from '@/lib/publishers';
+import { getSessionUserIdFromRequest } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = getSessionUserIdFromRequest(req);
     const body = await req.json();
     const { caption, mediaUrl, mediaType, targetAccountIds } = body;
 
@@ -21,6 +23,7 @@ export async function POST(req: NextRequest) {
     }
 
     const broadcast = await dispatchInstagramBroadcast({
+      userId,
       caption: caption || '',
       mediaUrl,
       mediaType: mediaType || 'video',

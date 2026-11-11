@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Check, Film, Loader2, Instagram } from 'lucide-react';
-import { InstagramBroadcast, InstagramPublishResult } from '@/lib/types';
+import { ExternalLink, Check, Film, Loader2, Instagram, Calendar, Play } from 'lucide-react';
+import { InstagramBroadcast } from '@/lib/types';
 
 export default function HistoryPage() {
   const [posts, setPosts] = useState<InstagramBroadcast[]>([]);
@@ -18,90 +18,115 @@ export default function HistoryPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-200 flex items-center justify-between">
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="pb-4 border-b border-slate-800 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <Instagram className="w-6 h-6 text-pink-600" />
-            <span>Published Reels History</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Log of all Instagram Reel broadcasts and direct links to live Reels
+          <div className="flex items-center gap-2">
+            <Instagram className="w-5 h-5 text-rose-500" />
+            <h1 className="text-xl font-bold text-white tracking-tight">
+              Broadcast Dispatch Log
+            </h1>
+          </div>
+          <p className="text-xs text-slate-400 mt-1 font-mono">
+            History of direct Instagram Reel broadcasts executed under your Google account
           </p>
         </div>
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin text-pink-600" />
-          <span>Loading published Reels...</span>
+        <div className="py-16 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+          <span>Loading broadcast history...</span>
         </div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed border-slate-200 bg-white rounded-2xl text-slate-500 text-xs p-6">
-          No Reels broadcasted yet. Push your first Reel from the Studio.
+        <div className="text-center py-16 border border-dashed border-slate-800 bg-slate-900/40 rounded-2xl text-slate-400 text-xs p-8 space-y-2">
+          <div className="w-10 h-10 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-2">
+            <Film className="w-5 h-5" />
+          </div>
+          <p className="font-semibold text-white">No Reels broadcasted in this workspace yet.</p>
+          <p className="text-slate-500">Instant publish a Reel from the Publisher Studio to see live logs here.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {posts.map((post) => (
-            <div
-              key={post.id}
-              className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3 shadow-xs hover:border-pink-200 transition-all"
-            >
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-medium">
-                  {new Date(post.createdAt).toLocaleString()}
-                </span>
-                <span className="text-pink-700 font-bold bg-pink-50 px-2.5 py-0.5 rounded-full border border-pink-200 text-[11px]">
-                  {post.results.filter((r) => r.status === 'success').length} of {post.results.length} Accounts Pushed
-                </span>
-              </div>
+        <div className="space-y-4">
+          {posts.map((post) => {
+            const successCount = post.results.filter((r) => r.status === 'success').length;
+            const totalCount = post.results.length || post.targetAccountIds.length;
 
-              <div className="flex items-start gap-3">
-                {post.mediaUrl && (
-                  <div className="w-16 h-20 rounded-xl bg-slate-900 border border-slate-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                    <Film className="w-6 h-6 text-pink-400" />
+            return (
+              <div
+                key={post.id}
+                className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 hover:border-slate-700 transition-all shadow-sm"
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-slate-400 font-mono text-[11px]">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>{new Date(post.createdAt).toLocaleString()}</span>
                   </div>
-                )}
-                <p className="text-xs text-slate-800 line-clamp-3 flex-1 font-medium leading-relaxed">
-                  {post.caption || <span className="text-slate-400 italic">No caption</span>}
-                </p>
-              </div>
-
-              {/* Per-account results */}
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-                {post.results.map((res: InstagramPublishResult) => (
-                  <div
-                    key={res.accountId}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold"
+                  <span
+                    className={`font-mono text-[10px] px-2.5 py-0.5 rounded-full border ${
+                      successCount === totalCount && totalCount > 0
+                        ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/60'
+                        : 'bg-rose-950/60 text-rose-300 border-rose-800/60'
+                    }`}
                   >
-                    <Instagram className="w-3.5 h-3.5 text-pink-600" />
-                    <span className="text-slate-800">@{res.username}</span>
+                    {successCount} of {totalCount} Accounts Pushed
+                  </span>
+                </div>
 
-                    {res.status === 'success' ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                        {res.postUrl && (
-                          <a
-                            href={res.postUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-pink-600 hover:underline flex items-center gap-1 font-bold ml-1"
+                <div className="flex items-start gap-4">
+                  {post.mediaUrl && (
+                    <div className="w-14 h-24 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+                      <video
+                        src={post.mediaUrl}
+                        className="w-full h-full object-cover"
+                        muted
+                      />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <Play className="w-4 h-4 fill-white text-white opacity-80" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-white line-clamp-3 leading-relaxed whitespace-pre-line font-mono">
+                      {post.caption || '(No caption provided)'}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {post.results.map((r) => (
+                        <div
+                          key={r.accountId}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-mono"
+                        >
+                          <Instagram className="w-3 h-3 text-rose-400" />
+                          <span className="text-white">@{r.username}</span>
+                          <span
+                            className={`text-[9px] px-1 rounded ${
+                              r.status === 'success'
+                                ? 'text-emerald-400 bg-emerald-950'
+                                : 'text-rose-400 bg-rose-950'
+                            }`}
                           >
-                            <span>Live Reel</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-rose-600 font-bold" title={res.error}>
-                        Failed
-                      </span>
-                    )}
+                            {r.status}
+                          </span>
+                          {r.postUrl && (
+                            <a
+                              href={r.postUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-rose-400 hover:text-white"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
