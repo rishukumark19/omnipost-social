@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Navbar } from '@/components/Navbar';
-import { getSettings } from '@/lib/db';
+import { BufferSidebar } from '@/components/BufferSidebar';
 
 export const metadata: Metadata = {
-  title: 'OmniPost - 1-Click Multi-Account Social Broadcaster',
-  description: 'Broadcast videos, photos, and posts across Instagram, Facebook, X (Twitter), and YouTube in one click.',
+  title: 'Buffer - All-in-one Social Media Toolkit for Creators',
+  description: 'Tell your brand story and grow an audience on Instagram, YouTube, X, and Facebook with Buffer.',
 };
 
 export default function RootLayout({
@@ -13,20 +12,19 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const settings = getSettings();
-
   return (
     <html lang="en">
-      <body className="bg-gray-950 text-gray-100 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
-        <Navbar simulationMode={settings.simulationMode} />
-        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
-          {children}
-        </main>
-        <footer className="border-t border-gray-900 py-6 text-center text-xs text-gray-600">
-          OmniPost Multi-Account Engine &copy; {new Date().getFullYear()} &bull; Instagram &bull; Facebook &bull; X (Twitter) &bull; YouTube
-        </footer>
+      <body className="bg-[#f8fafc] text-slate-900 min-h-screen flex antialiased">
+        {/* Left Buffer Sidebar */}
+        <BufferSidebar />
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+          <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );
 }
-

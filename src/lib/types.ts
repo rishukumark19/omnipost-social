@@ -9,6 +9,10 @@ export interface SocialAccount {
   credentials: {
     // Instagram
     instagramAccountId?: string;
+    sessionFile?: string;
+    sessionData?: string;
+    username?: string;
+    password?: string;
     // Facebook & Instagram
     accessToken?: string;
     pageId?: string;
@@ -19,6 +23,7 @@ export interface SocialAccount {
     twitterAccessSecret?: string;
     bearerToken?: string;
     // YouTube
+    tokenFile?: string;
     youtubeChannelId?: string;
     youtubeRefreshToken?: string;
   };
@@ -45,7 +50,8 @@ export interface PostBroadcast {
   mediaType?: 'image' | 'video' | 'none';
   targetAccountIds: string[];
   createdAt: string;
-  status: 'completed' | 'partial' | 'failed' | 'processing';
+  scheduledFor?: string;
+  status: 'completed' | 'partial' | 'failed' | 'processing' | 'scheduled';
   results: PublishResult[];
 }
 
@@ -59,4 +65,3 @@ export interface DatabaseSchema {
   posts: PostBroadcast[];
   settings: AppSettings;
 }
-
