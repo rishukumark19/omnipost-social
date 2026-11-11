@@ -1,41 +1,24 @@
-export type Platform = 'instagram' | 'facebook' | 'twitter' | 'youtube';
-
-export interface SocialAccount {
+export interface InstagramAccount {
   id: string;
-  platform: Platform;
   name: string;
-  handle: string;
+  username: string; // e.g. "benjamin.taless"
   avatarUrl?: string;
   credentials: {
-    // Instagram
-    instagramAccountId?: string;
-    sessionFile?: string;
-    sessionData?: string;
     username?: string;
     password?: string;
-    // Facebook & Instagram
+    sessionFile?: string;
+    sessionData?: string;
     accessToken?: string;
-    pageId?: string;
-    // Twitter / X
-    apiKey?: string;
-    apiSecret?: string;
-    twitterAccessToken?: string;
-    twitterAccessSecret?: string;
-    bearerToken?: string;
-    // YouTube
-    tokenFile?: string;
-    youtubeChannelId?: string;
-    youtubeRefreshToken?: string;
+    instagramAccountId?: string;
   };
   isSimulated?: boolean;
   status: 'active' | 'expired' | 'error';
   createdAt: string;
 }
 
-export interface PublishResult {
+export interface InstagramPublishResult {
   accountId: string;
-  accountName: string;
-  platform: Platform;
+  username: string;
   status: 'success' | 'failed';
   postId?: string;
   postUrl?: string;
@@ -43,25 +26,18 @@ export interface PublishResult {
   publishedAt: string;
 }
 
-export interface PostBroadcast {
+export interface InstagramBroadcast {
   id: string;
   caption: string;
-  mediaUrl?: string;
-  mediaType?: 'image' | 'video' | 'none';
+  mediaUrl: string;
+  mediaType: 'video' | 'image';
   targetAccountIds: string[];
   createdAt: string;
-  scheduledFor?: string;
-  status: 'completed' | 'partial' | 'failed' | 'processing' | 'scheduled';
-  results: PublishResult[];
-}
-
-export interface AppSettings {
-  simulationMode: boolean;
-  publicAppUrl: string;
+  status: 'completed' | 'partial' | 'failed' | 'processing';
+  results: InstagramPublishResult[];
 }
 
 export interface DatabaseSchema {
-  accounts: SocialAccount[];
-  posts: PostBroadcast[];
-  settings: AppSettings;
+  accounts: InstagramAccount[];
+  posts: InstagramBroadcast[];
 }

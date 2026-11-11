@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccounts, addAccount, removeAccount } from '@/lib/db';
-import { SocialAccount } from '@/lib/types';
+import { InstagramAccount } from '@/lib/types';
 
 export async function GET() {
   const accounts = getAccounts();
@@ -10,30 +10,25 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { platform, name, handle, avatarUrl, credentials, isSimulated } = body;
+    const { name, username, credentials, isSimulated } = body;
 
-    if (!platform || !name || !handle) {
+    const cleanUsername = (username || name || '').trim().replace(/^@/, '');
+
+    if (!cleanUsername) {
       return NextResponse.json(
-        { error: 'Platform, account name, and handle are required.' },
+        { error: 'Instagram username is required.' },
         { status: 400 }
       );
     }
 
-    const newAccount: SocialAccount = {
-      id: 'acc-' + Date.now(),
-      platform,
-      name,
-      handle: handle.startsWith('@') ? handle : `@${handle}`,
+    const newAccount: InstagramAccount = {
+      id: 'acc-ig-' + Date.now(),
+      name: name || cleanUsername,
+      username: cleanUsername,
       avatarUrl:
-        avatarUrl ||
-        (platform === 'instagram'
-          ? 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&h=120&fit=crop'
-          : platform === 'facebook'
-          ? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=120&h=120&fit=crop'
-          : platform === 'twitter'
-          ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop'
-          : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop'),
-      credentials: credentials || {},
+        body.avatarUrl ||
+        `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop`,
+      credentials: credentials || { username: cleanUsername },
       isSimulated: isSimulated ?? false,
       status: 'active',
       createdAt: new Date().toISOString(),
@@ -61,4 +56,3 @@ export async function DELETE(req: NextRequest) {
 
   return NextResponse.json({ success: true, id });
 }
-

@@ -1,81 +1,22 @@
 import fs from 'fs';
 import path from 'path';
-import { DatabaseSchema, SocialAccount, PostBroadcast, AppSettings } from './types';
+import { DatabaseSchema, InstagramAccount, InstagramBroadcast } from './types';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 const INITIAL_DATA: DatabaseSchema = {
-  settings: {
-    simulationMode: true,
-    publicAppUrl: 'http://localhost:3000',
-  },
   accounts: [
     {
       id: 'acc-insta-1',
-      platform: 'instagram',
-      name: 'CrossTech Instagram',
-      handle: '@crosstech_official',
-      avatarUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&h=120&fit=crop',
-      credentials: {
-        instagramAccountId: '17841400000000001',
-        accessToken: 'mock_insta_token_1',
-      },
-      isSimulated: true,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'acc-insta-2',
-      platform: 'instagram',
-      name: 'AI Video Edits',
-      handle: '@aivideo_creators',
+      name: 'Benjamin Tales',
+      username: 'benjamin.taless',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop',
       credentials: {
-        instagramAccountId: '17841400000000002',
-        accessToken: 'mock_insta_token_2',
+        sessionFile: 'D:\\ai video editing with image\\insta_session.json',
+        username: 'benjamin.taless',
       },
-      isSimulated: true,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'acc-fb-1',
-      platform: 'facebook',
-      name: 'CrossTech Facebook Page',
-      handle: 'fb.com/CrossTechPage',
-      avatarUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=120&h=120&fit=crop',
-      credentials: {
-        pageId: '1098765432101',
-        accessToken: 'mock_fb_token_1',
-      },
-      isSimulated: true,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'acc-x-1',
-      platform: 'twitter',
-      name: 'CrossTech X',
-      handle: '@crosstech_ai',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop',
-      credentials: {
-        bearerToken: 'mock_x_bearer',
-      },
-      isSimulated: true,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'acc-yt-1',
-      platform: 'youtube',
-      name: 'AI Video Studios (YT)',
-      handle: '@AIVideoStudios',
-      avatarUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&h=120&fit=crop',
-      credentials: {
-        youtubeChannelId: 'UCmockchannel123',
-      },
-      isSimulated: true,
+      isSimulated: false,
       status: 'active',
       createdAt: new Date().toISOString(),
     },
@@ -108,12 +49,13 @@ export function saveDb(data: DatabaseSchema): void {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-export function getAccounts(): SocialAccount[] {
-  return getDb().accounts;
+export function getAccounts(): InstagramAccount[] {
+  return getDb().accounts || [];
 }
 
-export function addAccount(account: SocialAccount): SocialAccount {
+export function addAccount(account: InstagramAccount): InstagramAccount {
   const db = getDb();
+  if (!db.accounts) db.accounts = [];
   db.accounts.push(account);
   saveDb(db);
   return account;
@@ -121,6 +63,7 @@ export function addAccount(account: SocialAccount): SocialAccount {
 
 export function removeAccount(id: string): boolean {
   const db = getDb();
+  if (!db.accounts) return false;
   const initialLength = db.accounts.length;
   db.accounts = db.accounts.filter((a) => a.id !== id);
   if (db.accounts.length !== initialLength) {
@@ -130,15 +73,16 @@ export function removeAccount(id: string): boolean {
   return false;
 }
 
-export function getPosts(): PostBroadcast[] {
+export function getPosts(): InstagramBroadcast[] {
   const db = getDb();
-  return db.posts.sort(
+  return (db.posts || []).sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
 
-export function savePostBroadcast(post: PostBroadcast): void {
+export function savePostBroadcast(post: InstagramBroadcast): void {
   const db = getDb();
+  if (!db.posts) db.posts = [];
   const index = db.posts.findIndex((p) => p.id === post.id);
   if (index >= 0) {
     db.posts[index] = post;
@@ -147,15 +91,3 @@ export function savePostBroadcast(post: PostBroadcast): void {
   }
   saveDb(db);
 }
-
-export function getSettings(): AppSettings {
-  return getDb().settings;
-}
-
-export function updateSettings(settings: Partial<AppSettings>): AppSettings {
-  const db = getDb();
-  db.settings = { ...db.settings, ...settings };
-  saveDb(db);
-  return db.settings;
-}
-

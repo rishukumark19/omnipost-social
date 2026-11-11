@@ -1,249 +1,176 @@
 import os
 import sys
 import json
-import pickle
 import traceback
 from typing import Dict, Any, List
+from instagrapi import Client
+from instagrapi.exceptions import (
+    BadPassword,
+    TwoFactorRequired,
+    ChallengeRequired,
+    LoginRequired
+)
 
-def publish_instagram(account: Dict[str, Any], file_path: str, caption: str) -> Dict[str, Any]:
-    from instagrapi import Client
+SESSIONS_DIR = os.path.join(os.getcwd(), "data", "sessions")
+os.makedirs(SESSIONS_DIR, exist_ok=True)
+
+def get_instagram_client(account: Dict[str, Any]) -> Client:
     cl = Client()
     cl.delay_range = [1, 3]
 
-    session_data = account.get("credentials", {}).get("sessionData")
-    session_file = account.get("credentials", {}).get("sessionFile")
-    username = account.get("credentials", {}).get("username")
-    password = account.get("credentials", {}).get("password")
+    creds = account.get("credentials", {})
+    username = creds.get("username", "").strip().replace("@", "")
+    password = creds.get("password", "")
+    session_file = creds.get("sessionFile")
+    session_data = creds.get("sessionData")
 
-    # Check fallback to D:\ai video editing with image\insta_session.json if available
+    # Path to custom saved session
+    custom_session_path = os.path.join(SESSIONS_DIR, f"{username}_session.json") if username else None
     default_session_path = r"D:\ai video editing with image\insta_session.json"
 
-    logged_in = False
-
+    # Try 1: Load from direct sessionData string
     if session_data:
         try:
             cl.set_settings(session_data if isinstance(session_data, dict) else json.loads(session_data))
-            logged_in = True
+            return cl
         except Exception as e:
-            print(f"[Instagram] Session data load failed: {e}", file=sys.stderr)
+            print(f"[{username}] Session data error: {e}", file=sys.stderr)
 
-    if not logged_in and session_file and os.path.exists(session_file):
+    # Try 2: Load from account sessionFile
+    if session_file and os.path.exists(session_file):
         try:
             cl.load_settings(session_file)
-            logged_in = True
+            return cl
         except Exception as e:
-            print(f"[Instagram] Session file load failed: {e}", file=sys.stderr)
+            print(f"[{username}] Session file error: {e}", file=sys.stderr)
 
-    if not logged_in and os.path.exists(default_session_path):
+    # Try 3: Load from data/sessions/{username}_session.json
+    if custom_session_path and os.path.exists(custom_session_path):
+        try:
+            cl.load_settings(custom_session_path)
+            return cl
+        except Exception as e:
+            print(f"[{username}] Custom session load error: {e}", file=sys.stderr)
+
+    # Try 4: Fallback to default session in D:\ai video editing with image
+    if os.path.exists(default_session_path):
         try:
             cl.load_settings(default_session_path)
-            logged_in = True
-            print(f"[Instagram] Loaded default session from {default_session_path}", file=sys.stderr)
+            return cl
         except Exception as e:
-            print(f"[Instagram] Default session load failed: {e}", file=sys.stderr)
+            print(f"[{username}] Default session error: {e}", file=sys.stderr)
 
-    if not logged_in and username and password:
-        try:
-            print(f"[Instagram] Logging in with username {username}...", file=sys.stderr)
-            cl.login(username, password)
-            logged_in = True
-        except Exception as e:
-            return {"status": "failed", "error": f"Instagram login failed: {str(e)}"}
+    # Try 5: Username & Password Login
+    if username and password:
+        print(f"[{username}] Logging in with credentials...", file=sys.stderr)
+        cl.login(username, password)
+        if custom_session_path:
+            cl.dump_settings(custom_session_path)
+        return cl
 
-    if not logged_in:
-        return {"status": "failed", "error": "No valid Instagram session or login credentials found."}
+    raise Exception(f"No valid session or credentials found for @{username}")
 
-    # Upload video (Reel) or photo
-    is_video = file_path.lower().endswith(('.mp4', '.mov', '.avi', '.webm'))
+
+def publish_to_instagram(account: Dict[str, Any], file_path: str, caption: str) -> Dict[str, Any]:
+    username = account.get("username", account.get("name", "instagram"))
+    
+    # If simulated
+    if account.get("isSimulated", False):
+        import time
+        time.sleep(1.2)
+        mock_id = f"sim_{int(time.time())}"
+        return {
+            "status": "success",
+            "postId": mock_id,
+            "postUrl": f"https://www.instagram.com/reel/{mock_id}/",
+            "username": username
+        }
+
+    if not file_path or not os.path.exists(file_path):
+        return {
+            "status": "failed",
+            "error": f"Media file not found at: {file_path}",
+            "username": username
+        }
+
     try:
+        cl = get_instagram_client(account)
+        is_video = file_path.lower().endswith(('.mp4', '.mov', '.avi', '.webm'))
+
         if is_video:
-            print(f"[Instagram] Uploading Reel: {file_path}", file=sys.stderr)
+            print(f"[@{username}] Uploading Reel: {file_path}", file=sys.stderr)
             media = cl.clip_upload(file_path, caption=caption)
             reel_url = f"https://www.instagram.com/reel/{media.code}/"
+            print(f"[@{username}] Reel live at: {reel_url}", file=sys.stderr)
             return {
                 "status": "success",
                 "postId": str(media.pk),
                 "postUrl": reel_url,
-                "code": media.code
+                "code": media.code,
+                "username": username
             }
         else:
-            print(f"[Instagram] Uploading Photo: {file_path}", file=sys.stderr)
+            print(f"[@{username}] Uploading Photo: {file_path}", file=sys.stderr)
             media = cl.photo_upload(file_path, caption=caption)
             post_url = f"https://www.instagram.com/p/{media.code}/"
             return {
                 "status": "success",
                 "postId": str(media.pk),
                 "postUrl": post_url,
-                "code": media.code
+                "code": media.code,
+                "username": username
             }
     except Exception as e:
-        return {"status": "failed", "error": f"Instagram upload error: {str(e)}"}
-
-
-def publish_youtube(account: Dict[str, Any], file_path: str, caption: str) -> Dict[str, Any]:
-    from googleapiclient.discovery import build
-    from googleapiclient.http import MediaFileUpload
-    from google.auth.transport.requests import Request
-
-    token_path = account.get("credentials", {}).get("tokenFile")
-    default_yt_token = r"D:\ai video editing with image\yt credential\yt_token.pickle"
-
-    token_file = token_path if (token_path and os.path.exists(token_path)) else default_yt_token
-
-    if not os.path.exists(token_file):
-        return {"status": "failed", "error": f"YouTube token file not found at {token_file}"}
-
-    try:
-        with open(token_file, "rb") as f:
-            creds = pickle.load(f)
-
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-                with open(token_file, "wb") as f:
-                    pickle.dump(creds, f)
-            else:
-                return {"status": "failed", "error": "YouTube credentials expired and require re-authentication."}
-
-        youtube = build("youtube", "v3", credentials=creds)
-
-        title = (caption.split("\n")[0][:95] if caption else "New Short") or "New Short"
-        description = caption
-
-        media = MediaFileUpload(file_path, mimetype="video/mp4", resumable=True)
-        body = {
-            "snippet": {
-                "title": title,
-                "description": description,
-                "tags": ["shorts", "trending"],
-                "categoryId": "24"
-            },
-            "status": {
-                "privacyStatus": "public",
-                "selfDeclaredMadeForKids": False
-            }
-        }
-
-        request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
-        response = None
-        while response is None:
-            status, response = request.next_chunk()
-            if status:
-                print(f"[YouTube] Uploaded {int(status.progress() * 100)}%", file=sys.stderr)
-
-        video_id = response.get("id")
+        err_msg = str(e)
+        print(f"[@{username}] Error: {err_msg}", file=sys.stderr)
         return {
-            "status": "success",
-            "postId": video_id,
-            "postUrl": f"https://youtube.com/shorts/{video_id}"
+            "status": "failed",
+            "error": err_msg,
+            "username": username
         }
-    except Exception as e:
-        return {"status": "failed", "error": f"YouTube upload error: {str(e)}"}
 
 
-def publish_twitter(account: Dict[str, Any], file_path: str, caption: str) -> Dict[str, Any]:
-    import tweepy
-    creds = account.get("credentials", {})
-    api_key = creds.get("apiKey")
-    api_secret = creds.get("apiSecret")
-    access_token = creds.get("twitterAccessToken")
-    access_secret = creds.get("twitterAccessSecret")
-    bearer_token = creds.get("bearerToken")
-
-    if not (api_key and api_secret and access_token and access_secret):
-        return {"status": "failed", "error": "Missing Twitter API Key / Access Token in account credentials."}
-
+def test_login(account: Dict[str, Any]) -> Dict[str, Any]:
+    username = account.get("username", "").strip().replace("@", "")
+    password = account.get("password", "")
+    
+    cl = Client()
     try:
-        # OAuth 1.0a handler for media upload
-        auth = tweepy.OAuth1UserHandler(api_key, api_secret, access_token, access_secret)
-        api = tweepy.API(auth)
-
-        # Client for v2 tweet creation
-        client = tweepy.Client(
-            consumer_key=api_key,
-            consumer_secret=api_secret,
-            access_token=access_token,
-            access_token_secret=access_secret
-        )
-
-        media_ids = []
-        if file_path and os.path.exists(file_path):
-            is_video = file_path.lower().endswith(('.mp4', '.mov', '.avi', '.webm'))
-            category = "tweet_video" if is_video else None
-            media = api.media_upload(filename=file_path, media_category=category)
-            media_ids.append(media.media_id)
-
-        tweet = client.create_tweet(text=caption[:280], media_ids=media_ids if media_ids else None)
-        tweet_id = tweet.data["id"]
-        handle = account.get("handle", "user").replace("@", "")
-
-        return {
-            "status": "success",
-            "postId": tweet_id,
-            "postUrl": f"https://x.com/{handle}/status/{tweet_id}"
-        }
-    except Exception as e:
-        return {"status": "failed", "error": f"Twitter error: {str(e)}"}
-
-
-def publish_facebook(account: Dict[str, Any], file_path: str, caption: str) -> Dict[str, Any]:
-    import requests
-    creds = account.get("credentials", {})
-    page_id = creds.get("pageId")
-    access_token = creds.get("accessToken")
-
-    if not (page_id and access_token):
-        return {"status": "failed", "error": "Missing Facebook Page ID or Access Token"}
-
-    try:
-        is_video = file_path and file_path.lower().endswith(('.mp4', '.mov', '.avi', '.webm'))
+        cl.login(username, password)
+        session_path = os.path.join(SESSIONS_DIR, f"{username}_session.json")
+        cl.dump_settings(session_path)
         
-        if is_video:
-            url = f"https://graph.facebook.com/v19.0/{page_id}/videos"
-            with open(file_path, "rb") as video_file:
-                files = {"source": video_file}
-                data = {"description": caption, "access_token": access_token}
-                res = requests.post(url, data=data, files=files)
-                res_data = res.json()
-        else:
-            url = f"https://graph.facebook.com/v19.0/{page_id}/photos"
-            with open(file_path, "rb") as photo_file:
-                files = {"source": photo_file}
-                data = {"caption": caption, "access_token": access_token}
-                res = requests.post(url, data=data, files=files)
-                res_data = res.json()
-
-        if "id" in res_data:
-            post_id = res_data["id"]
-            return {
-                "status": "success",
-                "postId": post_id,
-                "postUrl": f"https://facebook.com/{post_id}"
-            }
-        else:
-            err = res_data.get("error", {}).get("message", "Facebook API Error")
-            return {"status": "failed", "error": err}
+        info = cl.account_info()
+        return {
+            "status": "success",
+            "username": info.username,
+            "fullName": info.full_name,
+            "avatarUrl": str(info.profile_pic_url),
+            "sessionFile": session_path
+        }
     except Exception as e:
-        return {"status": "failed", "error": f"Facebook error: {str(e)}"}
+        return {"status": "failed", "error": str(e)}
 
 
 def main():
     if len(sys.argv) < 2:
-        print(json.dumps({"error": "No payload provided"}))
+        print(json.dumps({"error": "No arguments provided"}))
         sys.exit(1)
 
     payload_raw = sys.argv[1]
-    try:
-        if os.path.exists(payload_raw):
-            with open(payload_raw, "r", encoding="utf-8") as f:
-                payload = json.load(f)
-        else:
-            payload = json.loads(payload_raw)
-    except Exception as e:
-        print(json.dumps({"error": f"Failed to parse payload: {e}"}))
-        sys.exit(1)
+    if os.path.exists(payload_raw):
+        with open(payload_raw, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+    else:
+        payload = json.loads(payload_raw)
 
     action = payload.get("action", "publish")
+
+    if action == "test_login":
+        res = test_login(payload.get("account", {}))
+        print(json.dumps(res))
+        return
+
     if action == "publish":
         file_path = payload.get("filePath", "")
         caption = payload.get("caption", "")
@@ -251,50 +178,12 @@ def main():
 
         results = []
         for acc in accounts:
-            platform = acc.get("platform")
             acc_id = acc.get("id")
-            acc_name = acc.get("name")
-            
-            # If account is marked simulated, return instant mock
-            if acc.get("isSimulated", False):
-                mock_id = f"sim_{acc_id}_{int(os.times().elapsed * 1000)}"
-                results.append({
-                    "accountId": acc_id,
-                    "accountName": acc_name,
-                    "platform": platform,
-                    "status": "success",
-                    "postId": mock_id,
-                    "postUrl": f"https://{platform}.com/{mock_id}"
-                })
-                continue
-
-            try:
-                if platform == "instagram":
-                    res = publish_instagram(acc, file_path, caption)
-                elif platform == "youtube":
-                    res = publish_youtube(acc, file_path, caption)
-                elif platform == "twitter":
-                    res = publish_twitter(acc, file_path, caption)
-                elif platform == "facebook":
-                    res = publish_facebook(acc, file_path, caption)
-                else:
-                    res = {"status": "failed", "error": f"Unsupported platform: {platform}"}
-
-                res["accountId"] = acc_id
-                res["accountName"] = acc_name
-                res["platform"] = platform
-                results.append(res)
-            except Exception as e:
-                results.append({
-                    "accountId": acc_id,
-                    "accountName": acc_name,
-                    "platform": platform,
-                    "status": "failed",
-                    "error": str(e)
-                })
+            res = publish_to_instagram(acc, file_path, caption)
+            res["accountId"] = acc_id
+            results.append(res)
 
         print(json.dumps({"results": results}))
 
 if __name__ == "__main__":
     main()
-

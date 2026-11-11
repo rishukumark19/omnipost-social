@@ -4,25 +4,19 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Send,
-  Calendar,
-  Layers,
-  BarChart3,
-  Settings,
-  Plus,
-  ChevronDown,
   Instagram,
-  Facebook,
-  Twitter,
-  Youtube,
+  Plus,
   History,
-  CheckCircle2,
+  Users,
+  Film,
+  Sparkles,
+  ExternalLink,
 } from 'lucide-react';
-import { SocialAccount } from '@/lib/types';
+import { InstagramAccount } from '@/lib/types';
 
 export function BufferSidebar() {
   const pathname = usePathname();
-  const [accounts, setAccounts] = useState<SocialAccount[]>([]);
+  const [accounts, setAccounts] = useState<InstagramAccount[]>([]);
 
   useEffect(() => {
     fetch('/api/accounts')
@@ -34,71 +28,48 @@ export function BufferSidebar() {
   }, []);
 
   const navItems = [
-    { label: 'Create Post', href: '/', icon: Send },
-    { label: 'Sent History', href: '/history', icon: History },
-    { label: 'Channels', href: '/accounts', icon: Layers },
-    { label: 'Settings', href: '/settings', icon: Settings },
+    { label: 'Publish Reel', href: '/', icon: Film },
+    { label: 'Connected Accounts', href: '/accounts', icon: Users },
+    { label: 'Published Reels', href: '/history', icon: History },
   ];
-
-  const getPlatformIcon = (platform: string) => {
-    switch (platform) {
-      case 'instagram':
-        return <Instagram className="w-3.5 h-3.5 text-pink-500" />;
-      case 'youtube':
-        return <Youtube className="w-3.5 h-3.5 text-red-500" />;
-      case 'twitter':
-        return <Twitter className="w-3.5 h-3.5 text-sky-500" />;
-      case 'facebook':
-        return <Facebook className="w-3.5 h-3.5 text-blue-600" />;
-      default:
-        return null;
-    }
-  };
 
   return (
     <aside className="w-64 border-r border-slate-200 bg-white flex flex-col justify-between h-screen sticky top-0 select-none">
       <div className="flex flex-col">
-        {/* Buffer Top Brand Header */}
+        {/* Instagram Brand Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            {/* Iconic Buffer 3-layers Logo */}
-            <div className="w-8 h-8 rounded-lg bg-[#2C4BFF] flex flex-col items-center justify-center gap-1 shadow-sm shadow-blue-500/20">
-              <div className="w-4 h-1 bg-white rounded-full"></div>
-              <div className="w-4 h-1 bg-white/80 rounded-full"></div>
-              <div className="w-4 h-1 bg-white/60 rounded-full"></div>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white shadow-xs">
+              <Instagram className="w-5 h-5" />
             </div>
             <div className="flex flex-col">
               <span className="font-extrabold text-base tracking-tight text-slate-900 leading-none">
-                Buffer
+                InstaMulti
               </span>
-              <span className="text-[10px] text-slate-400 font-medium tracking-wide">
-                Publishing Hub
+              <span className="text-[10px] text-slate-400 font-medium">
+                Multi-Account Reels
               </span>
             </div>
           </Link>
 
-          {/* Org pill */}
-          <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
-            <span>CrossTech</span>
-          </div>
+          <span className="text-[10px] font-bold text-pink-600 bg-pink-50 border border-pink-200 px-2 py-0.5 rounded-full">
+            {accounts.length} Active
+          </span>
         </div>
 
-        {/* Create Post Button */}
+        {/* Primary CTA */}
         <div className="p-4 pb-2">
           <Link
             href="/"
-            className="w-full py-2.5 px-4 rounded-lg bg-[#2C4BFF] hover:bg-[#1E3A8A] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all"
+            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-95 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Create Post</span>
+            <span>New Reel Broadcast</span>
           </Link>
         </div>
 
-        {/* Main Navigation */}
+        {/* Navigation */}
         <div className="px-3 py-2 space-y-0.5">
-          <span className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-            Publishing
-          </span>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -108,85 +79,67 @@ export function BufferSidebar() {
                 href={item.href}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                   isActive
-                    ? 'bg-blue-50 text-[#2C4BFF]'
+                    ? 'bg-pink-50 text-pink-600'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-[#2C4BFF]' : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-pink-600' : 'text-slate-400'}`} />
                 <span>{item.label}</span>
               </Link>
             );
           })}
         </div>
 
-        {/* Connected Channels List (Buffer Signature Feature) */}
+        {/* Connected Instagram Accounts List */}
         <div className="px-3 py-3 border-t border-slate-100">
           <div className="flex items-center justify-between px-3 mb-2">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Connected Channels ({accounts.length})
+              Connected Usernames
             </span>
             <Link
               href="/accounts"
-              className="text-[11px] font-semibold text-[#2C4BFF] hover:underline"
+              className="text-[11px] font-bold text-pink-600 hover:underline"
             >
               + Add
             </Link>
           </div>
 
-          <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+          <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
             {accounts.map((acc) => (
-              <Link
+              <div
                 key={acc.id}
-                href="/accounts"
-                className="flex items-center justify-between px-3 py-1.5 rounded-lg text-xs hover:bg-slate-50 transition-colors group"
+                className="flex items-center justify-between px-3 py-1.5 rounded-lg text-xs hover:bg-slate-50 transition-colors"
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="relative">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-400 to-pink-600 p-0.5 flex-shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={acc.avatarUrl}
-                      alt={acc.name}
-                      className="w-5 h-5 rounded-full object-cover border border-slate-200"
+                      alt={acc.username}
+                      className="w-full h-full rounded-full object-cover border border-white"
                     />
-                    <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-xs">
-                      {getPlatformIcon(acc.platform)}
-                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <span className="text-slate-700 font-medium truncate block text-xs group-hover:text-slate-900">
-                      {acc.name}
-                    </span>
-                    <span className="text-[10px] text-slate-400 truncate block">
-                      {acc.handle}
-                    </span>
-                  </div>
+                  <span className="text-slate-800 font-bold text-xs truncate">
+                    @{acc.username}
+                  </span>
                 </div>
 
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-              </Link>
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></div>
+              </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* User Profile Footer */}
-      <div className="p-3 border-t border-slate-200 bg-slate-50/60 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-xs shadow-xs">
-            RK
+      {/* Footer */}
+      <div className="p-3 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-slate-800 text-white font-bold flex items-center justify-center text-[11px]">
+            IG
           </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-bold text-slate-800 leading-tight">Rishu Kumar</span>
-            <span className="text-[10px] text-slate-400">Team Admin</span>
-          </div>
+          <span className="text-xs font-bold text-slate-700">Instagram Studio</span>
         </div>
-
-        <Link
-          href="/settings"
-          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-md hover:bg-slate-200/60"
-        >
-          <Settings className="w-4 h-4" />
-        </Link>
+        <span className="text-[10px] text-slate-400">v2.0</span>
       </div>
     </aside>
   );
