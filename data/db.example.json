@@ -1,0 +1,20 @@
+{
+  "settings": {
+    "simulationMode": false,
+    "publicAppUrl": "http://localhost:3000"
+  },
+  "accounts": [
+    {
+      "id": "acc-sample-1",
+      "platform": "instagram",
+      "name": "My Instagram",
+      "handle": "@my_handle",
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop",
+      "credentials": {},
+      "isSimulated": true,
+      "status": "active",
+      "createdAt": "2026-11-11T00:00:00.000Z"
+    }
+  ],
+  "posts": []
+}
