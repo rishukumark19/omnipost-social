@@ -32,3 +32,4 @@ export function getCurrentUser(): User {
   const user = allUsers.find((u) => u.id === userId);
   return user || DEFAULT_USERS[0];
 }
+

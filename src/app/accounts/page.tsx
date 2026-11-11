@@ -12,9 +12,11 @@ import {
   CheckCircle2,
   Sparkles,
   ExternalLink,
+  KeyRound,
+  Lock,
+  HelpCircle,
 } from 'lucide-react';
 import { InstagramAccount } from '@/lib/types';
-import Link from 'next/link';
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<InstagramAccount[]>([]);
@@ -22,11 +24,13 @@ export default function AccountsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form states
+  const [authMethod, setAuthMethod] = useState<'sessionid' | 'password' | 'demo'>('sessionid');
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
+  const [sessionId, setSessionId] = useState('');
   const [password, setPassword] = useState('');
   const [followers, setFollowers] = useState('18.2K');
-  const [isSimulated, setIsSimulated] = useState(false);
+  const [showCookieGuide, setShowCookieGuide] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -69,6 +73,7 @@ export default function AccountsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: acc.id,
           accountId: acc.id,
           username: acc.username,
           credentials: acc.credentials,
@@ -91,24 +96,35 @@ export default function AccountsPage() {
 
   const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username) {
+    setErrorMsg(null);
+
+    const cleanUser = username.trim().replace(/^@/, '');
+    if (!cleanUser) {
       setErrorMsg('Instagram username is required.');
       return;
     }
 
-    setSaving(true);
-    setErrorMsg(null);
+    if (authMethod === 'sessionid' && !sessionId.trim()) {
+      setErrorMsg('Please paste your sessionid cookie value.');
+      return;
+    }
 
-    const cleanUser = username.trim().replace(/^@/, '');
+    if (authMethod === 'password' && !password.trim()) {
+      setErrorMsg('Password is required for direct login.');
+      return;
+    }
+
+    setSaving(true);
 
     const payload = {
       name: name || cleanUser,
       username: cleanUser,
       followers: followers || '10K',
-      isSimulated,
+      isSimulated: authMethod === 'demo',
       credentials: {
         username: cleanUser,
-        password: password ? password.trim() : undefined,
+        sessionid: authMethod === 'sessionid' ? sessionId.trim() : undefined,
+        password: authMethod === 'password' ? password.trim() : undefined,
       },
     };
 
@@ -124,6 +140,7 @@ export default function AccountsPage() {
 
       setName('');
       setUsername('');
+      setSessionId('');
       setPassword('');
       setIsModalOpen(false);
       fetchAccounts();
@@ -282,7 +299,7 @@ export default function AccountsPage() {
                   <button
                     onClick={() => handleVerify(acc)}
                     disabled={isVerifying}
-                    className="flex items-center gap-1 text-[11px] font-medium text-rose-400 hover:text-white transition-colors"
+                    className="flex items-center gap-1 text-[11px] font-semibold text-rose-400 hover:text-white transition-colors"
                   >
                     {isVerifying ? (
                       <>
@@ -292,7 +309,7 @@ export default function AccountsPage() {
                     ) : (
                       <>
                         <RefreshCw className="w-3 h-3" />
-                        <span>Check Session</span>
+                        <span>Verify Session</span>
                       </>
                     )}
                   </button>
@@ -305,8 +322,8 @@ export default function AccountsPage() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white text-sm"
@@ -319,11 +336,51 @@ export default function AccountsPage() {
                 <Instagram className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Connect Instagram Profile</h3>
+                <h3 className="text-base font-bold text-white">Connect Instagram Creator Profile</h3>
                 <p className="text-xs text-slate-400">
-                  Direct connection via session file or credentials
+                  Select your preferred connection method for this Google workspace.
                 </p>
               </div>
+            </div>
+
+            {/* Method Tabs */}
+            <div className="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-xl mb-4 text-xs font-medium border border-slate-800">
+              <button
+                type="button"
+                onClick={() => setAuthMethod('sessionid')}
+                className={`py-2 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  authMethod === 'sessionid'
+                    ? 'bg-rose-500 text-white shadow-xs font-semibold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>Session Cookie</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMethod('password')}
+                className={`py-2 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  authMethod === 'password'
+                    ? 'bg-rose-500 text-white shadow-xs font-semibold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Password</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMethod('demo')}
+                className={`py-2 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  authMethod === 'demo'
+                    ? 'bg-rose-500 text-white shadow-xs font-semibold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Demo Account</span>
+              </button>
             </div>
 
             {errorMsg && (
@@ -343,7 +400,7 @@ export default function AccountsPage() {
                   <input
                     type="text"
                     required
-                    placeholder="benjamin.taless"
+                    placeholder="e.g. benjamin.taless"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-rose-500 font-mono"
@@ -351,59 +408,84 @@ export default function AccountsPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                  Account Display Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Benjamin Tales"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-rose-500"
-                />
-              </div>
+              {authMethod === 'sessionid' && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-medium text-slate-300">
+                      Instagram <code className="text-rose-400">sessionid</code> Cookie Value <span className="text-rose-400">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCookieGuide(!showCookieGuide)}
+                      className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 underline"
+                    >
+                      <HelpCircle className="w-3 h-3" />
+                      <span>Where to find this?</span>
+                    </button>
+                  </div>
 
-              <div>
-                <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                  Follower Count (Display)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 18.2K"
-                  value={followers}
-                  onChange={(e) => setFollowers(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-rose-500 font-mono"
-                />
-              </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 14569139723%3AnNUoCr22kzE2Ba%3A15%3A..."
+                    value={sessionId}
+                    onChange={(e) => setSessionId(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-rose-500 font-mono"
+                  />
 
-              <div>
-                <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                  Password (for session auto-renewal)
-                </label>
-                <input
-                  type="password"
-                  placeholder="Optional if session is already saved"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-rose-500"
-                />
-              </div>
+                  {showCookieGuide && (
+                    <div className="mt-2 p-3 bg-slate-950 border border-slate-800 rounded-xl text-[11px] text-slate-300 space-y-1.5 leading-relaxed font-mono">
+                      <p className="font-semibold text-rose-400">💡 How to copy sessionid in 10 seconds:</p>
+                      <ol className="list-decimal list-inside space-y-0.5 text-slate-400 text-[10px]">
+                        <li>Open <a href="https://instagram.com" target="_blank" rel="noreferrer" className="text-rose-400 underline">instagram.com</a> in your browser where you are logged in.</li>
+                        <li>Press <kbd className="bg-slate-800 px-1 rounded">F12</kbd> (or Right Click → Inspect).</li>
+                        <li>Click <strong>Application</strong> tab (or <strong>Storage</strong> on Firefox) → <strong>Cookies</strong> → <code className="text-rose-400">https://www.instagram.com</code>.</li>
+                        <li>Find the row named <code className="text-white bg-slate-800 px-1 py-0.2 rounded">sessionid</code> and double-click to copy its value!</li>
+                      </ol>
+                      <p className="text-[10px] text-emerald-400">✨ 100% bypass of 2FA and bot challenges!</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="simCheck"
-                  checked={isSimulated}
-                  onChange={(e) => setIsSimulated(e.target.checked)}
-                  className="w-4 h-4 rounded bg-slate-800 border-slate-700 text-rose-500 focus:ring-0"
-                />
-                <label htmlFor="simCheck" className="text-xs text-slate-300 cursor-pointer">
-                  Simulation mode (Mock publishing without live network calls)
-                </label>
-              </div>
+              {authMethod === 'password' && (
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                    Password <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Enter your Instagram password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-rose-500"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    InstaMulti will authenticate with Instagram and save an encrypted session.
+                  </p>
+                </div>
+              )}
 
-              <div className="pt-3 flex items-center justify-end gap-2">
+              {authMethod === 'demo' && (
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                    Followers Count (Display)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 54.2K"
+                    value={followers}
+                    onChange={(e) => setFollowers(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-rose-500 font-mono"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Demo accounts simulate genuine broadcasts and live Reel preview overlays without hitting Instagram limits.
+                  </p>
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}

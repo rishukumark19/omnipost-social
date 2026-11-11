@@ -416,3 +416,4 @@ export function GoogleAuthHeader({ currentUser: initialUser, onUserChanged }: Go
     </>
   );
 }
+
